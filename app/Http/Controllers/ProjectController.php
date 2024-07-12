@@ -3,24 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Services\ProjectService;
 use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
+    protected ?ProjectService $projectService = null;
+
+    public function __construct(ProjectService $projectService)
+    {
+        $this->projectService = $projectService;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
-    }
+        $projects = $this->projectService->getAll();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return response()->json([
+            'projects' => $projects
+        ]);
     }
 
     /**

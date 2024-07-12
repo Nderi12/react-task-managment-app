@@ -2,64 +2,107 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Task\ReorderTasksRequest;
+use App\Http\Requests\Task\CreateTaskRequest;
+use App\Http\Requests\Task\ListTasksRequest;
+use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Models\Task;
+use App\Services\ProjectService;
+use App\Services\TaskService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    protected ?TaskService $taskService = null;
+
+    public function __construct(TaskService $taskService)
+    {
+        $this->taskService = $taskService;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
+        $projects = (new ProjectService())->getAll();
+
+        return view('tasks.index', [
+            'projects' => $projects,
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function list(ListTasksRequest $request): JsonResponse
     {
-        //
+        $tasks = $this->taskService->list($request->get('project_id'));
+
+        return response()->json([
+            'success' => true,
+            'tasks' => $tasks,
+            'message' => "Tasks retrieved successfully.",
+        ]); // 200
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(CreateTaskRequest $request): JsonResponse
     {
-        //
+        $this->taskService->store($request->all());
+
+        return response()->json([
+            'success' => true,
+            'message' => "Task created successfully.",
+        ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Task $task)
+    public function get(int $id): JsonResponse
     {
-        //
+        $task = $this->taskService->getById($id);
+
+        if ($task) {
+            return response()->json([
+                'success' => true,
+                'task' => $task,
+                'message' => "Task retrieved successfully.",
+            ]); // 200
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => "Task not found!",
+            ], 404);
+        }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Task $task)
+    public function update(UpdateTaskRequest $request, int $id): JsonResponse
     {
-        //
+        $this->taskService->update($id, $request->all());
+
+        return response()->json([
+            'success' => true,
+            'message' => "Task updated successfully.",
+        ], 201);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Task $task)
+    public function delete(int $id): JsonResponse
     {
-        //
+        $this->taskService->delete($id);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Task deleted successfully.",
+        ], 201);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Task $task)
+    public function reorder(ReorderTasksRequest $request): JsonResponse
     {
-        //
+        $this->taskService->reorder(
+            $request->get('project_id'),
+            $request->get('start'),
+            $request->get('end')
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "Tasks reordered successfully.",
+        ], 201);
     }
 }
